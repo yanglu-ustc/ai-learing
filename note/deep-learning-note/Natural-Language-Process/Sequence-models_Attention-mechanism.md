@@ -70,44 +70,198 @@ $$
 
 ## 3. 集束搜索(Beam Search)
 
-“**Jane visite l'Afrique en Septembre.**”翻译成英语"**Jane is visiting Africa in September**".，集束搜索算法首先做的就是挑选要输出的英语翻译中的第一个单词。这里列出了10,000个词的词汇表，忽略大小写，在集束搜索的第一步中用这个网络来评估第一个单词的概率值，给定输入序列x**x**，即法语作为输入，第一个输出y**y**的概率值是多少
+“**Jane visite l'Afrique en Septembre.**”翻译成英语"**Jane is visiting Africa in September**".，集束搜索算法首先做的就是挑选要输出的英语翻译中的第一个单词。这里列出了10,000个词的词汇表，忽略大小写，在集束搜索的第一步中用这个网络来评估第一个单词的概率值，给定输入序列x，即法语作为输入，第一个输出y的概率值是多少
 
-[![](https://baozoulin.gitbook.io/~gitbook/image?url=https%3A%2F%2Fgithub.com%2Ffengdu78%2Fdeeplearning_ai_books%2Fraw%2Fmaster%2Fimages%2F8a22dfb5d3c0a4b5d2fdfa716dc3f3b2.png&width=300&dpr=4&quality=100&sign=936588d397222a5f1b653827b7831a7be49430baaee82e1e9f364f0101317d43)](https://github.com/fengdu78/deeplearning_ai_books/blob/master/images/8a22dfb5d3c0a4b5d2fdfa716dc3f3b2.png)
+<div>
+<img src="img/屏幕截图%202024-05-07%20214948.png" width=32.85%>
+<img src="img/屏幕截图%202024-05-07%20215014.png" width=32.85%>
+<img src="img/屏幕截图%202024-05-07%20215032.png" width=32.85%>
+</div>
 
-集束搜索会考虑多个选择，集束搜索算法会有一个参数**B**，叫做集束宽（**beam width**）。这个例子中集束宽设成3，意味着集束搜索一次会考虑3个可能结果，比如对第一个单词有不同选择的可能性，最后找到**in**、**jane**、**september**，是英语输出的第一个单词的最可能的三个选项，然后集束搜索算法会把结果存到计算机内存里以便后面尝试用这三个词。为了执行集束搜索的第一步，需要输入法语句子到编码网络，然后解码这个网络，**softmax**层会输出10,000个概率值，然后取前三个存起来，概率表示为：
+集束搜索会考虑多个选择，集束搜索算法会有一个参数**B**，叫做集束宽(**beam width**)。这个例子中集束宽设成3，意味着集束搜索一次会考虑3个可能结果，比如对第一个单词有不同选择的可能性，最后找到**in**、**jane**、**september**，是英语输出的第一个单词的最可能的三个选项，然后集束搜索算法会把结果存到计算机内存里以便后面尝试用这三个词。为了执行集束搜索的第一步，需要输入法语句子到编码网络，然后解码这个网络，**softmax**层会输出10,000个概率值，然后取前三个存起来，概率表示为:
 
-P(y^<1>∣x)**P**(**y**^****<**1**>**∣**x**)**
+$$
+P(\hat{y}^{<1>}|x)
+$$
 
-集束搜索算法的第二步：针对每个第一个单词考虑第二个单词是什么
+集束搜索算法的第二步:针对每个第一个单词考虑第二个单词是什么
 
-[![](https://baozoulin.gitbook.io/~gitbook/image?url=https%3A%2F%2Fgithub.com%2Ffengdu78%2Fdeeplearning_ai_books%2Fraw%2Fmaster%2Fimages%2F14a940ae2ea7932b7b7190eceb79f79e.png&width=300&dpr=4&quality=100&sign=5a7547d83eb9fa0a625e22c8b127b497ec679ec8ac4141345b75654ad956f5f9)](https://github.com/fengdu78/deeplearning_ai_books/blob/master/images/14a940ae2ea7932b7b7190eceb79f79e.png)
+为了评估第二个词的概率值，把 $y^{<1>}$ 设为单词**in**，输出就是 $y^{<2>}$，有了这个连接，这个网络就可以用来评估:在给定法语句子和翻译结果的第一个单词**in**的情况下第二个单词的概率
 
-为了评估第二个词的概率值，把y<1>**y**<**1**>设为单词**in**（编号3），输出就是y<2>**y**<**2**>（编号5），有了这个连接（编号6），这个网络就可以用来评估：在给定法语句子和翻译结果的第一个单词**in**的情况下第二个单词的概率
+在第二步更关心的是要找到最可能的第一个和第二个单词对，所以不仅仅是第二个单词有最大的概率，而是第一个、第二个单词对有最大的概率。可以表示成第一个单词的概率乘以第二个单词的概率:
 
-在第二步更关心的是要找到最可能的第一个和第二个单词对，所以不仅仅是第二个单词有最大的概率，而是第一个、第二个单词对有最大的概率（编号7）。可以表示成第一个单词的概率（编号8）乘以第二个单词的概率（编号9）：
-
-P(y^<1>,y^<2>∣x)=P(y^<1>∣x)⋅P(y^<2>∣x,y^<1>)**P**(**y**^****<**1**>**,**y**^****<**2**>**∣**x**)**=**P**(**y**^****<**1**>**∣**x**)**⋅**P**(**y**^****<**2**>**∣**x**,**y**^****<**1**>**)**
+$$
+P(\hat{y}^{<1>},\hat{y}^{<2>}|x)=P(\hat{y}^{<1>}|x)\cdot P(\hat{y}^{<2>}|x,\hat{y}^{<1>})
+$$
 
 **jane**、**september**跟上面一样
 
-[![](https://baozoulin.gitbook.io/~gitbook/image?url=https%3A%2F%2Fgithub.com%2Ffengdu78%2Fdeeplearning_ai_books%2Fraw%2Fmaster%2Fimages%2F507c9081ee77c686bb96a009248087fd.png&width=300&dpr=4&quality=100&sign=62f2ba6ea800e0d5c997d579397512f10a408e711247783c50903b629144d03a)](https://github.com/fengdu78/deeplearning_ai_books/blob/master/images/507c9081ee77c686bb96a009248087fd.png)
+注意，如果集束搜索找到了第一个和第二个单词对最可能的三个选择是“**in September**”或者“**jane is**”或者“**jane visits**”，就意味着去掉了**september**作为英语翻译结果的第一个单词的选择，第一个单词现在减少到了两个可能结果，但是集束宽是3，还是有 $y^{<1>}$，$y^{<2>}$ 对的三个选择
 
-注意，如果集束搜索找到了第一个和第二个单词对最可能的三个选择是“**in September**”或者“**jane is**”或者“**jane visits**”，就意味着去掉了**september**作为英语翻译结果的第一个单词的选择，第一个单词现在减少到了两个可能结果，但是集束宽是3，还是有y<1>**y**<**1**>，y<2>**y**<**2**>对的三个选择
+接着，再预测第三个单词。分别以in september，jane is，jane visits为条件，计算每个词汇表单词作为预测第三个单词的概率。从中选择概率最大的3个作为第三个单词的预测值，得到:in september jane，jane is visiting，jane visits africa
 
-接着，再预测第三个单词。分别以in september，jane is，jane visits为条件，计算每个词汇表单词作为预测第三个单词的概率。从中选择概率最大的3个作为第三个单词的预测值，得到：in september jane，jane is visiting，jane visits africa
+概率表示为:
 
-[![](https://baozoulin.gitbook.io/~gitbook/image?url=https%3A%2F%2Fgithub.com%2Ffengdu78%2Fdeeplearning_ai_books%2Fraw%2Fmaster%2Fimages%2F6a0b785dd54fcbc439bd82794eeefcf8.png&width=300&dpr=4&quality=100&sign=af916832dc622bc1730e49c6ab0beecf999a84c8e48c0e24bffaaa8779b95e0c)](https://github.com/fengdu78/deeplearning_ai_books/blob/master/images/6a0b785dd54fcbc439bd82794eeefcf8.png)
+$$
+P(\hat{y}^{<3>}|x,\hat{y}^{<1>},\hat{y}^{<2>})
+$$
 
-概率表示为：
+此时，得到的前三个单词的3种情况的概率为:
 
-P(y^<3>∣x,y^<1>,y^<2>)**P**(**y**^****<**3**>**∣**x**,**y**^****<**1**>**,**y**^****<**2**>**)**
+$$
+P(\hat{y}^{<3>},\hat{y}^{<1>},\hat{y}^{<2>}|x)=P(\hat{y}^{<1>}|x)\cdot P(\hat{y}^{<2>}|x,\hat{y}^{<1>})\cdot P(\hat{y}^{<3>}|x,\hat{y}^{<1>},\hat{y}^{<2>})
+$$
 
-此时，得到的前三个单词的3种情况的概率为：
-
-P(y^<1>,y^<2>,y^<3>∣x)=P(y^<1>∣x)⋅P(y^<2>∣x,y^<1>)⋅P(y^<3>∣x,y^<1>,y^<2>)**P**(**y**^****<**1**>**,**y**^****<**2**>**,**y**^****<**3**>**∣**x**)**=**P**(**y**^****<**1**>**∣**x**)**⋅**P**(**y**^****<**2**>**∣**x**,**y**^****<**1**>**)**⋅**P**(**y**^****<**3**>**∣**x**,**y**^****<**1**>**,**y**^****<**2**>**)
-
-以此类推，每次都取概率最大的三种预测。最后，选择概率最大的那一组作为最终的翻译语句：
+以此类推，每次都取概率最大的三种预测。最后，选择概率最大的那一组作为最终的翻译语句:
 
 **Jane is visiting Africa in September.**
 
 如果参数B=1，则就等同于greedy search。实际应用中，可以根据不同的需要设置B为不同的值。一般B越大，机器翻译越准确，但同时也会增加计算复杂度
+
+## 4. 改进集束搜索(Refinements to Beam Search)
+
+长度归一化(**Length normalization**)是对束搜索算法稍作调整的一种方式，使之得到更好的结果
+
+<div>
+<img src="img/屏幕截图%202024-05-07%20220951.png" width=45%>
+<img src="img/屏幕截图%202024-05-07%20221010.png" width=45%>
+</div>
+
+**束搜索**就是最大化概率 $P(y^{<1>}\cdots y^{<T_y>}|X)$，表示成:
+
+$$
+P(y^{<1>}|X)P(y^{<2>}∣X,y^{<1>})P(y^{<3>}|X,y^{<1>},y^{<2>})\cdots P(y^{<T_y>}|X,y^{<1>},y^{<2>}\cdots y^{<T_{y−1}>})
+$$
+
+即乘积概率(**the product probabilities**):
+
+$$
+\underset{y}{\argmax}\prod_{t=1}^{T_y}P(\hat{y}^{<t>}|x,\hat{y}^{<1>},\cdots,\hat{y}^{<t−1>})
+$$
+
+这些概率值通常都远小于1，会造成**数值下溢**(**numerical underflow**)，即数值太小了，导致电脑的浮点表示不能精确地储存
+
+因此在实践中,不会最大化这个乘积，而是取log值:
+
+$$
+\underset{y}{\argmax}\sum_{t=1}^{T_y}\log P(\hat{y}^{<t>}|x,\hat{y}^{<1>},\cdots,\hat{y}^{<t−1>})
+$$
+
+会得到一个数值上更稳定的算法，不容易出现数值的舍入误差(**rounding errors**)或者说数值下溢(**numerical underflow**)
+
+参照原来的目标函数(**this original objective**)，如果有一个很长的句子，那么这个句子的概率会很低，因为乘了很多项小于1的数字来估计句子的概率，就会得到一个更小的概率值，所以可能不自然地倾向于简短的翻译结果，因为短句子的概率是由更少数量的小于1的数字乘积得到的，所以乘积不会那么小。概率的log值也有同样的问题
+
+解决:可以把它归一化，通过除以翻译结果的单词数量。即取每个单词的概率对数值的平均，这样很明显地减少了对输出长的结果的惩罚:
+
+$$
+\underset{y}{\argmax}\frac{1}{T_y}\sum_{t=1}^{T_y}\log P(\hat{y}^{<t>}|x,\hat{y}^{<1>},\cdots,\hat{y}^{<t−1>})
+$$
+
+在实践中，会用一个更柔和的方法(**a softer approach**)，在 $T_y$ 上加上指数 $\alpha$:
+
+$$
+\underset{y}{\argmax}\frac{1}{T_y^\alpha}\sum_{t=1}^{T_y}\log P(\hat{y}^{<t>}|x,\hat{y}^{<1>},\cdots,\hat{y}^{<t−1>})
+$$
+
+$\alpha$ 可以等于0.7。如果 $\alpha$ 等于1，就相当于完全用长度来归一化，如果 $\alpha$ 等于0，$T_y$ 的0次幂就是1，就相当于完全没有归一化，$\alpha$ 就是算法另一个超参数(**hyper parameter**)
+
+总结一下如何运行束搜索算法:
+
+当运行束搜索时，会看到很多长度分别等于1、2、3...的句子等等，针对这些所有的可能的输出句子，取概率最大的几个句子，然后对这些句子计算目标函数 $\underset{y}{\argmax}\frac{1}{T_y^\alpha}\sum_{t=1}^{T_y}\log P(\hat{y}^{<t>}|x,\hat{y}^{<1>},\cdots,\hat{y}^{<t−1>})$，最后从经过评估的这些句子中挑选出在归一化的log概率目标函数上得分最高的一个，也叫作**归一化的对数似然目标函数**(**a normalized log likelihood objective**)
+
+> 如何选择束宽**B**:
+>
+> * **B**越大，考虑的选择越多，找到的句子可能越好，但是算法的计算代价越大，因为要把很多的可能选择保存起来，内存占用增大
+> * 如果用小的束宽**B**，结果会没那么好，因为在算法运行中，保存的选择更少，但是算法运行的更快，内存占用也小
+>
+> 在产品中，经常可以看到把束宽设到10，当B很大的时候，性能提高会越来越少。对于很多应用来说，从束宽1，也就是贪心算法，到束宽为3、到10，会看到一个很大的改善。但是当束宽从1000增加到3000时，效果就没那么明显
+>
+> 相对广度优先搜索(**BFS, Breadth First Search algorithms**)，深度优先搜索(**DFS, Depth First Search**)这些精确的搜索算法(**exact search algorithms**)，束搜索运行的更快，但是不能保证一定能找到argmax的准确的最大值
+
+## 5. 集束搜索的误差分析(Error analysis in beam search)
+
+束搜索算法是一种**近似搜索算法**(**an approximate search algorithm**)，也被称作**启发式搜索算法**(**a heuristic search algorithm**)，它不总是输出可能性最大的句子，它仅记录着**B**为前3或者10或是100种可能
+
+人工标记为 $y^*$。束搜索算法翻译结果标记为 $\hat{y}$。下面是一个十分糟糕的翻译，改变了句子的原意:
+
+<div>
+<img src="img/屏幕截图%202024-05-07%20222958.png" width=45%>
+<img src="img/屏幕截图%202024-05-07%20223010.png" width=45%>
+</div>
+
+模型有两个主要部分，一个是神经网络模型，或说是序列到序列模型(**sequence to sequence model**)，称作是**RNN**模型，另一部分是束搜索算法，以某个集束宽度**B**运行
+
+**RNN**(**循环神经网络**)实际上是个编码器和解码器(**the encoder and the decoder**)，它会计算 $P(y|x)$。如对于句子:**Jane visits Africa in September**，将**Jane visits Africa**填入，忽略字母的大小写，后面也是一样，计算得到 $P(y^*|x)$，$P(\hat{y}|x)$ 同样如此，然后比较一下这两个值哪个更大
+
+$P(y^*|x)$，$P(\hat{y}|x)$
+
+* 若$P(y^*|x)>P(\hat{y}|x)$，可束搜索算法却选择了 $P(\hat{y}|x)$，因此能够得出束搜索算法实际上不能给出使 $P(y|x)$ 最大化的 $y$ 值，因为束搜索算法的任务就是寻找一个 $y$ 的值来使这项更大，但是它却选择了 $\hat{y}$，而 $y^*$ 实际上能得到更大的值。因此这种情况下束搜索算法出错
+  (网络没有出错，只是取不到对应的解而已)
+* 若$P(y^*|x)\leq P(\hat{y}|x)$，$y^*$ 是比 $\hat{y}$ 更好的翻译结果，不过根据RNN模型的结果 $P(y^*)$ 是小于 $P(\hat{y})$ 的，即相比于 $\hat{y}$，$y^*$ 成为输出的可能更小。因此在这种情况下是**RNN**模型出了问题
+  (从网络上看，解就错了)
+
+以上都忽略了长度归一化(**length normalizations**)的细节，如果用了某种长度归一化，那么要比较长度归一化后的最优化目标函数值
+
+误差分析过程:
+
+1. 先遍历开发集，找出算法产生的错误
+2. 假如 $P(y^*|x)$ 的值为 $2\times 10^{−10}$，而 $P(\hat{y}|x)$ 的值为 $1\times 10^{−10}$，得知束搜索算法实际上选择了比 $y^*$ 可能性更低的 $\hat{y}$，则束搜索算法出错，缩写为**B**
+3. 接着继续遍历第二个错误，若对于第二个例子是**RNN**模型出现了问题，用缩写**R**来代表**RNN**
+4. 接着遍历更多的例子，有时是束搜索算法出现了问题，有时是模型出现了问题，等等
+5. 执行误差分析，得出束搜索算法和**RNN**模型出错的比例是多少。对开发集中每一个错误例子，即算法输出了比人工翻译更差的结果的情况，尝试确定是搜索算法出了问题，还是生成目标函数(束搜索算法使之最大化)的**RNN**模型出了问题。找到这两个部分中哪个是产生更多错误的原因
+6. 只有当发现是束搜索算法造成了大部分错误时，才值得花费努力**增大集束宽度B**；如果发现是**RNN**模型出了更多错，那么可以进行更深层次的分析，来决定是需要**增加正则化**还是**获取更多的训练数据**，抑或是尝试一个**不同的网络结构**
+
+## 6. Bleu 得分(Bleu Score (optional))
+
+机器翻译(**machine translation**)的一大难题是一个法语句子可以有多种英文翻译而且都同样很好，常见的解决办法是通过一个**BLEU**得分(**the BLEU score**)的东西来解决，BLEU得分是一个有用的单一实数评估指标，用于评估生成文本的算法，判断输出的结果是否与人工写出的参考文本的含义相似
+
+一般有多个人工翻译:
+
+<div>
+<img src="img/屏幕截图%202024-05-07%20224317.png" width=45%>
+<img src="img/屏幕截图%202024-05-07%20224342.png" width=45%>
+</div>
+
+BLEU得分做的就是给定一个机器生成的翻译，它能够自动地计算一个分数来衡量机器翻译的好坏。只要机器生成的翻译与任何一个人工翻译的结果足够接近，那么它就会得到一个高的BLEU分数。**BLEU**代表**bilingual evaluation understudy**(双语评估替补)。且这些人工翻译的参考会包含在开发集或是测试集中
+
+假设机器翻译(**MT**)的输出是:**the the the the the the the，**是一个十分糟糕的翻译。衡量机器翻译输出质量的方法之一是**观察输出结果的每一个词，看其是否出现在参考中**，这被称做是机器翻译的精确度(**a precision of the machine translation output**)。这个情况下，机器翻译输出了七个单词并且这七个词中的每一个都出现在了参考1或是参考2，因此输出的精确度就是7/7，分母为机器翻译单词数目，分子为相应单词是否出现在参考翻译中。但是，这种方法很不科学，并不可取
+
+改良后的精确度评估方法(**the modified precision measure**):**把每一个单词的记分上限定为它在参考句子中出现的最多次数**。在参考1中，单词**the**出现了两次，在参考2中，单词**the**只出现了一次。单词**the**的得分上限为2。输出句子的得分为2/7，分母是7个词中单词**the**总共出现的次数，分子是单词**the**出现的计数，在达到**上限**时截断计数
+
+上述都只是关注单独的单词，在**BLEU**得分中，另外一种更科学的打分方法是**bleu score on bigrams(二元词组)**，bigram的意思就是相邻的两个单词
+
+定义**截取计数**(**the clipped count**)，也就是Count_clip:给算法设置得分上限，上限值为二元词组出现在参考1或2中的最大次数
+
+假定机器翻译输出了稍微好一点的翻译，对MT output进行分解，得到的bigrams及其出现在MT output中的次数count
+
+相应的bigrams precision为4/6也就是2/3，为二元词组改良后的精确度
+
+<div>
+<img src="img/屏幕截图%202024-05-07%20224418.png" width=45%>
+</div>
+
+将改良后的一元词组精确度定义为 $P_1$，$P$ 代表的是精确度。下标1的意思是一元词组，即考虑单独的词，$P_n$ 定义为n元词组精确度，用**n-gram**替代掉一元词组。即机器翻译输出中的n元词组的**countclip**之和除以n元词组的出现次数之和
+
+如果机器翻译输出与参考1或是参考2完全一致，那么所有的 $P_1$、$P_2$ 等等的值，都会等于1.0
+
+最终的BLEU得分:
+
+将得到的 $P_1$，$P_2$，$P_3$...$P_n$ 相加再取平均值
+
+BLEU得分被定义为:
+
+$$
+p=\exp(\frac{1}{n}\sum_{i=1}^{n}P_i)
+$$
+
+然后用BP(“简短惩罚”brevity penalty)的惩罚因子(the BP penalty)来调整。它能够惩罚输出了太短翻译结果的翻译系统:
+
+$$
+BP=\begin{cases}1&if\ MT\_output\_length>reference\_output\_length \\\exp(1-reference\_output\_length/MT\_output\_length)&otherwise\end{cases}
+$$
+
+$$
+p=BP\cdot \exp(\frac{1}{n}\sum_{i=1}^{n}P_i)
+$$
+
+BLEU得分被用来评估许多生成文本的系统(systems that generate text)，比如说机器翻译系统(machine translation systems)，图像描述系统(image captioning systems)。不过它并没有用于语音识别(speech recognition)。因为在语音识别当中，通常只有一个答案
